@@ -34,7 +34,7 @@ def get_bottle_plan():
 
     # Bottle all barrels into green potions.
     with db.engine.begin() as connection:
-        mls = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory"))
+        mls = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
 
     if mls > 0:
         num_potions = 0
@@ -46,7 +46,7 @@ def get_bottle_plan():
 
         # Get the current number of green potions
         with db.engine.begin() as connection:
-            curr_green = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory"))
+            curr_green = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
 
         # Updates the number of mls and potions in table
         with db.engine.begin() as connection:
