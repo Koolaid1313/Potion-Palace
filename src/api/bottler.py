@@ -19,6 +19,36 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
+    
+    red_potions = 0
+    green_potions = 0
+    blue_potions= 0
+    dark_potions = 0
+
+    #gets the correct number of potions to add
+    for potion in potions_delivered:
+        if potion.potion_type == [100, 0, 0, 0]:
+            red_potions += potion.quantity
+        elif potion.potion_type == [0, 100, 0, 0]:
+            green_potions += potion.quantity
+        elif potion.potion_type == [0, 0, 100, 0]:
+            blue_potions += potion.quantity
+        elif potion.potion_type == [0, 0, 0, 100]:
+            dark_potions += potion.quantity
+        else:
+            raise Exception("Invalid potion type")
+        
+    # Updates the number of potions in table
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(
+            """
+            UPDATE global_inventory SET 
+            red_potions = red_potions + :red_potions,
+            green_potions = green_potions + :green_potions,
+            blue_potions = blue_potions + :blue_potions,
+            dark_potions = dark_potions + :dark_potions
+            """),
+            [{"red_potions": red_potions,"green_potions": green_potions,"blue_potions": blue_potions,"dark_potions": dark_potions}])
 
     return "OK"
 
@@ -32,86 +62,37 @@ def get_bottle_plan():
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
-    # Bottle all barrels into green potions.
     with db.engine.begin() as connection:
-        green_mls = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
-        blue_mls = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).fetchone()[0]
-        red_mls = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).fetchone()[0]
+        result = connection.execute(sqlalchemy.text(
+            """
+            SELECT 
+            red_ml,
+            green_ml,
+            blue_ml,
+            dark_ml
+            FROM global_inventory
+            """)).one()
+        
+    potion_types = [[100, 0, 0, 0], [0, 100, 0, 0], [0, 0, 100, 0], [0, 0, 0, 100]]
+    #Bottle all mls into potions
+    for mls , potion_type in zip([result.red_ml, result.green_ml, result.blue_ml, result.dark_ml], potion_types):
+        if mls > 0:
+            num_potions = 0
 
-    if green_mls > 0:
-        num_potions = 0
+            # Run for every 100 ml until empty
+            while mls >= 100:
+                num_potions += 1
+                mls -= 100
 
-        # Run for every 100 ml until empty
-        while mls > 0:
-            num_potions += 1
-            mls -= 100
-
-        # Get the current number of potions
-        with db.engine.begin() as connection:
-            curr = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
-
-        # Updates the number of mls and potions in table
-        with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = 0"))
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {num_potions + curr}"))
-
-        # Returns the correct number of green potions
-        return [
-                {
-                    "potion_type": [0, 100, 0, 0],
-                    "quantity": num_potions
-                }
-            ]
-    elif blue_mls > 0:
-        num_potions = 0
-
-        # Run for every 100 ml until empty
-        while mls > 0:
-            num_potions += 1
-            mls -= 100
-
-        # Get the current number of potions
-        with db.engine.begin() as connection:
-            curr = connection.execute(sqlalchemy.text("SELECT num_blue_potions FROM global_inventory")).fetchone()[0]
-
-        # Updates the number of mls and potions in table
-        with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = 0"))
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_blue_potions = {num_potions + curr}"))
-
-        # Returns the correct number of blue potions
-        return [
-                {
-                    "potion_type": [0, 0, 100, 0],
-                    "quantity": num_potions
-                }
-            ]
-    elif red_mls > 0:
-        num_potions = 0
-
-        # Run for every 100 ml until empty
-        while mls > 0:
-            num_potions += 1
-            mls -= 100
-
-        # Get the current number of potions
-        with db.engine.begin() as connection:
-            curr = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory")).fetchone()[0]
-
-        # Updates the number of mls and potions in table
-        with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = 0"))
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_red_potions = {num_potions + curr}"))
-
-        # Returns the correct number of red potions
-        return [
-                {
-                    "potion_type": [100, 0, 0, 0],
-                    "quantity": num_potions
-                }
-            ]
-    else:
-        return []
+            # Returns the correct number of potions
+            return [
+                    {
+                        "potion_type": potion_type,
+                        "quantity": num_potions
+                    }
+                ]
+ 
+    return []
 
 if __name__ == "__main__":
     print(get_bottle_plan())
