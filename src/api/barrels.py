@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
+import random
 import sqlalchemy
 from src import database as db
 
@@ -77,15 +78,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             FROM global_inventory
             """)).one()
 
-    # Define potion types
-    potion_types = ["RED", "GREEN", "BLUE", "DARK"]
+    # Define potion types in a dictionary
+    potions = {
+        "RED": result.red_ml, 
+        "GREEN": result.green_ml, 
+        "BLUE": result.blue_ml, 
+        "DARK": result.dark_ml
+    }
 
-    # Iterate over quantities and potion types simultaneously
-    for quantity, potion_type in zip([result.red_ml, result.green_ml, result.blue_ml, result.dark_ml], potion_types):
-        if quantity == 0:
+    print(potions)
+
+    # Shuffle the potions
+    shuffled_potion_names = list(potions.keys())
+    random.shuffle(shuffled_potion_names)
+
+    # Iterate over the shuffled potions
+    for potion_name in shuffled_potion_names:
+        if potions[potion_name] == 0:
             return [
                 {
-                   "sku": f"SMALL_{potion_type}_BARREL",
+                   "sku": f"SMALL_{potion_name}_BARREL",
                    "quantity": 1,
                 }
             ]
