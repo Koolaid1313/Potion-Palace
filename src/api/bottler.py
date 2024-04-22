@@ -24,17 +24,25 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     green_potions = 0
     blue_potions= 0
     dark_potions = 0
+    red_ml_used = 0
+    green_ml_used = 0
+    blue_ml_used = 0
+    dark_ml_used = 0
 
     #gets the correct number of potions to add
     for potion in potions_delivered:
         if potion.potion_type == [100, 0, 0, 0]:
             red_potions += potion.quantity
+            red_ml_used += potion.quantity * 100
         elif potion.potion_type == [0, 100, 0, 0]:
             green_potions += potion.quantity
+            green_ml_used += potion.quantity * 100
         elif potion.potion_type == [0, 0, 100, 0]:
             blue_potions += potion.quantity
+            blue_ml_used += potion.quantity * 100
         elif potion.potion_type == [0, 0, 0, 100]:
             dark_potions += potion.quantity
+            dark_ml_used += potion.quantity * 100
         else:
             raise Exception("Invalid potion type")
         
@@ -44,11 +52,16 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             """
             UPDATE global_inventory SET 
             red_potions = red_potions + :red_potions,
+            red_ml = red_ml - :red_ml_used,
             green_potions = green_potions + :green_potions,
+            green_ml = green_ml - :green_ml_used,
             blue_potions = blue_potions + :blue_potions,
-            dark_potions = dark_potions + :dark_potions
+            blue_ml = blue_ml - :blue_ml_used,
+            dark_potions = dark_potions + :dark_potions,
+            dark_ml = dark_ml - :dark_ml_used
             """),
-            [{"red_potions": red_potions,"green_potions": green_potions,"blue_potions": blue_potions,"dark_potions": dark_potions}])
+            [{"red_potions": red_potions, "red_ml_used": red_ml_used, "green_potions": green_potions, "green_ml_used": green_ml_used,
+              "blue_potions": blue_potions, "blue_ml_used": blue_ml_used, "dark_potions": dark_potions, "dark_ml_used":dark_ml_used}])
 
     return "OK"
 
