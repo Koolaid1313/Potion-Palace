@@ -78,28 +78,29 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             FROM global_inventory
             """)).one()
 
-    # Define potion types in a dictionary
-    potions = {
-        "RED": result.red_ml, 
-        "GREEN": result.green_ml, 
-        "BLUE": result.blue_ml, 
-        "DARK": result.dark_ml
-    }
+    if result.gold >= 100:
+        # Define potion types in a dictionary
+        potions = {
+            "RED": result.red_ml, 
+            "GREEN": result.green_ml, 
+            "BLUE": result.blue_ml, 
+            "DARK": result.dark_ml
+        }
 
-    print(potions)
+        print(potions)
 
-    # Shuffle the potions
-    shuffled_potion_names = list(potions.keys())
-    random.shuffle(shuffled_potion_names)
+        # Shuffle the potions
+        shuffled_potion_names = list(potions.keys())
+        random.shuffle(shuffled_potion_names)
 
-    # Iterate over the shuffled potions
-    for potion_name in shuffled_potion_names:
-        if potions[potion_name] == 0:
-            return [
-                {
-                   "sku": f"SMALL_{potion_name}_BARREL",
-                   "quantity": 1,
-                }
-            ]
-        
+        # Iterate over the shuffled potions
+        for potion_name in shuffled_potion_names:
+            if potions[potion_name] == 0:
+                return [
+                    {
+                    "sku": f"SMALL_{potion_name}_BARREL",
+                    "quantity": 1,
+                    }
+                ]
+    
     return []

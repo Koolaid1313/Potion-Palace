@@ -30,8 +30,8 @@ def get_inventory():
             FROM global_inventory
             """)).one()
 
-    return {"number_of_potions": {result.red_potions + result.green_potions + result.blue_potions + result.dark_potions}, 
-            "ml_in_barrels": {result.red_ml + result.green_ml + result.blue_ml + result.dark_ml}, "gold": result.gold}
+    return {"number_of_potions": result.red_potions + result.green_potions + result.blue_potions + result.dark_potions, 
+            "ml_in_barrels": result.red_ml + result.green_ml + result.blue_ml + result.dark_ml, "gold": result.gold}
 
 # Gets called once a day
 @router.post("/plan")
