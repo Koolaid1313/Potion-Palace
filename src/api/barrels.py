@@ -99,7 +99,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 return [
                     {
                     "sku": f"SMALL_{potion_name}_BARREL",
-                    "quantity": 1,
+                    "quantity": int(result.gold / 100),
                     }
                 ]
     

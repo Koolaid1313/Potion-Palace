@@ -22,13 +22,14 @@ def reset():
             UPDATE global_inventory SET 
             gold = 100,
             red_ml = 0,
-            red_potions = 0,
             green_ml = 0,
-            green_potions = 0,
             blue_ml = 0,
-            blue_potions = 0,
-            dark_ml = 0,
-            dark_potions = 0
+            dark_ml = 0
+            """))
+        connection.execute(sqlalchemy.text(
+            """
+            UPDATE potions SET 
+            quantity = 0
             """))
 
     return "OK"

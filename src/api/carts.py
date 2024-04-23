@@ -87,7 +87,17 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    return {"cart_id": 1}
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text(
+            """
+            INSERT INTO carts (customer_name, character_class, level)
+            VALUES (:name, :class, :level)
+            RETURNING cart_id
+            """), 
+            [{"name": new_cart.customer_name, "class": new_cart.character_class, 
+              "level": new_cart.level}]).one()
+        
+    return {"cart_id": result[0]}
 
 
 class CartItem(BaseModel):
@@ -97,7 +107,13 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(
+            """
+            INSERT INTO cart_items (cart_id, item_sku, quantity)
+            VALUES (:id, :sku, :quantity)
+            """), 
+            [{"id": cart_id, "sku": item_sku, "quantity": cart_item.quantity}])
     return "OK"
 
 
@@ -107,5 +123,44 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    print(cart_checkout)
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    with db.engine.begin() as connection:
+        # Get a list of all items in cart
+        items = connection.execute(sqlalchemy.text(
+            """
+            SELECT * 
+            FROM cart_items
+            WHERE cart_id = :id
+            """), 
+            [{"id": cart_id}]).all()
+        
+        # Get the sum of all the prices and quantities
+        gold = 0
+        quantity = 0
+        for item in items:
+            result = connection.execute(sqlalchemy.text(
+                """
+                SELECT price 
+                FROM potions
+                WHERE sku = :sku
+                """), [{"sku": item.item_sku}]).one()
+            gold += result.price * item.quantity
+            quantity += item.quantity
+
+            # Update the inventory
+            connection.execute(sqlalchemy.text(
+                """
+                UPDATE potions SET 
+                quantity = quantity - :quantity_bought
+                WHERE sku = :sku
+                """), [{"quantity_bought": item.quantity, "sku": item.item_sku}])
+        
+        # Update the gold
+        connection.execute(sqlalchemy.text(
+                """
+                UPDATE global_inventory SET 
+                gold = gold + :gold
+                """), [{"gold": gold}])
+        
+    return {"total_potions_bought": quantity, "total_gold_paid": gold}

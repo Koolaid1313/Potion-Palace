@@ -14,41 +14,20 @@ def get_catalog():
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
             """
-            SELECT 
-            red_potions, 
-            green_potions,
-            blue_potions,
-            dark_potions
-            FROM global_inventory
-            """)).one()
+            SELECT *
+            FROM potions
+            """)).all()
 
-    return [
-            {
-                "sku": "RED_POTION",
-                "name": "red potion",
-                "quantity": result.red_potions,
-                "price": 50,
-                "potion_type": [100, 0, 0, 0],
-            },
-            {
-                "sku": "GREEN_POTION",
-                "name": "green potion",
-                "quantity": result.green_potions,
-                "price": 50,
-                "potion_type": [0, 100, 0, 0],
-            },
-            {
-                "sku": "BLUE_POTION",
-                "name": "blue potion",
-                "quantity": result.blue_potions,
-                "price": 50,
-                "potion_type": [0, 0, 100, 0],
-            },
-            {
-                "sku": "DARK_POTION",
-                "name": "dark potion",
-                "quantity": result.dark_potions,
-                "price": 100,
-                "potion_type": [0, 0, 0, 100],
-            }
-        ]
+    catalog = []
+
+    for potion in result:
+        if potion.quantity > 0:
+            catalog.append({
+                    "sku": potion.sku,
+                    "name": potion.name,
+                    "quantity": potion.quantity,
+                    "price": potion.price,
+                    "potion_type": potion.type,
+                })
+        
+    return catalog
