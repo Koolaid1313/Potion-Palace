@@ -21,8 +21,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
 
     # Updates the tables
-    for potion in potions_delivered:
-        with db.engine.begin() as connection:
+    with db.engine.begin() as connection:
+        for potion in potions_delivered:
             # Updates the number of mls in table
             connection.execute(sqlalchemy.text(
                 """
@@ -32,17 +32,17 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 blue_ml = blue_ml - :blue_ml_used,
                 dark_ml = dark_ml - :dark_ml_used
                 """),
-                [{"red_ml_used": potion.potion_type[0] * potion.quantity, "green_ml_used": potion.potion_type[1] * potion.quantity, 
-                  "blue_ml_used": potion.potion_type[2] * potion.quantity,"dark_ml_used": potion.potion_type[3] * potion.quantity}])
+                {"red_ml_used": potion.potion_type[0] * potion.quantity, "green_ml_used": potion.potion_type[1] * potion.quantity, 
+                  "blue_ml_used": potion.potion_type[2] * potion.quantity,"dark_ml_used": potion.potion_type[3] * potion.quantity})
             
             # Updates the number of potions in table
             connection.execute(sqlalchemy.text(
                 """
                 UPDATE potions SET 
                 quantity = quantity + :quantity
-                WHERE type = ARRAY :potion_type
+                WHERE type = :potion_type
                 """),
-                [{"quantity": potion.quantity, "potion_type": potion.potion_type}])
+                {"quantity": potion.quantity, "potion_type": potion.potion_type})
         
 
     return "OK"
