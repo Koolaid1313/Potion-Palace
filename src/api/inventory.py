@@ -28,7 +28,7 @@ def get_inventory():
         # Sum to extract potions quantity
         potions = connection.execute(sqlalchemy.text(
             """
-            SELECT SUM(change)
+            SELECT COALESCE(SUM(change), 0) AS sum
             FROM potion_ledgers
             """)).one()
 
