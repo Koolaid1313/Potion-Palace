@@ -14,8 +14,10 @@ def get_catalog():
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
             """
-            SELECT *
-            FROM potions
+            SELECT p.sku, p.name, p.price, p.type, SUM(pl.change) AS quantity
+            FROM potions p
+            JOIN potion_ledgers pl ON p.sku = pl.sku
+            GROUP BY p.sku, p.name, p.price, p.type
             """)).all()
 
     catalog = []
@@ -27,7 +29,7 @@ def get_catalog():
                     "name": potion.name,
                     "quantity": potion.quantity,
                     "price": potion.price,
-                    "potion_type": potion.type,
+                    "potion_type": potion.type
                 })
         
     return catalog

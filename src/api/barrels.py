@@ -51,14 +51,12 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory SET
-                gold = gold - :gold_paid,  
-                red_ml = red_ml + :red_ml,
-                green_ml = green_ml + :green_ml,
-                blue_ml = blue_ml + :blue_ml,
-                dark_ml = dark_ml + :dark_ml
+                INSERT INTO inventory_ledgers 
+                (gold, red_ml, green_ml, blue_ml, dark_ml) 
+                VALUES 
+                (:gold, :red_ml, :green_ml, :blue_ml, :dark_ml)
                 """),
-                [{"gold_paid": gold_paid, "red_ml": red_ml,"green_ml": green_ml,"blue_ml": blue_ml,"dark_ml": dark_ml}])
+                [{"gold": -gold_paid, "red_ml": red_ml,"green_ml": green_ml,"blue_ml": blue_ml,"dark_ml": dark_ml}])
 
     return "OK"
 
@@ -72,12 +70,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
             """
-            SELECT gold, 
-            red_ml,
-            green_ml,
-            blue_ml,
-            dark_ml
-            FROM global_inventory
+            SELECT SUM(gold) AS gold,
+            SUM(red_ml) AS red_ml, 
+            SUM(green_ml) AS green_ml, 
+            SUM(blue_ml) AS blue_ml, 
+            SUM(dark_ml) AS dark_ml
+            FROM inventory_ledgers
             """)).one()
 
     # Get amount of gold

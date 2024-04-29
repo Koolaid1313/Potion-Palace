@@ -26,25 +26,25 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             # Updates the number of mls in table
             connection.execute(sqlalchemy.text(
                 """
-                UPDATE global_inventory SET 
-                red_ml = red_ml - :red_ml_used,
-                green_ml = green_ml - :green_ml_used,
-                blue_ml = blue_ml - :blue_ml_used,
-                dark_ml = dark_ml - :dark_ml_used
+                INSERT INTO inventory_ledgers 
+                (gold, red_ml, green_ml, blue_ml, dark_ml) 
+                VALUES 
+                (0, :red_ml, :green_ml, :blue_ml, :dark_ml)
                 """),
-                {"red_ml_used": potion.potion_type[0] * potion.quantity, "green_ml_used": potion.potion_type[1] * potion.quantity, 
-                  "blue_ml_used": potion.potion_type[2] * potion.quantity,"dark_ml_used": potion.potion_type[3] * potion.quantity})
+                {"red_ml": -potion.potion_type[0] * potion.quantity, "green_ml": -potion.potion_type[1] * potion.quantity, 
+                  "blue_ml": -potion.potion_type[2] * potion.quantity,"dark_ml": -potion.potion_type[3] * potion.quantity})
             
             # Updates the number of potions in table
             connection.execute(sqlalchemy.text(
                 """
-                UPDATE potions SET 
-                quantity = quantity + :quantity
-                WHERE type = :potion_type
+                INSERT INTO potion_ledgers 
+                (sku, change) 
+                SELECT sku, :quantity
+                FROM potions
+                WHERE potions.type = :potion_type
                 """),
                 {"quantity": potion.quantity, "potion_type": potion.potion_type})
         
-
     return "OK"
 
 @router.post("/plan")
@@ -61,52 +61,50 @@ def get_bottle_plan():
         mls_result = connection.execute(sqlalchemy.text(
             """
             SELECT 
-            red_ml,
-            green_ml,
-            blue_ml,
-            dark_ml
-            FROM global_inventory
+            SUM(red_ml) AS red_ml, 
+            SUM(green_ml) AS green_ml, 
+            SUM(blue_ml) AS blue_ml, 
+            SUM(dark_ml) AS dark_ml
+            FROM inventory_ledgers
             """)).one()
+        
         potions = connection.execute(sqlalchemy.text(
             """
-            SELECT *
+            SELECT 
+            sku, name, type, price
             FROM potions
+            ORDER BY price DESC
             """)).all()
         
-    #Bottle all mls into potions
+    bottle_plan = []
+    mls = [mls_result.red_ml, mls_result.green_ml, mls_result.blue_ml, mls_result.dark_ml]
+    
+    # Bottle all mls into potions
     for potion in potions:
-        brewable = True
-        mls = [mls_result.red_ml, mls_result.green_ml, mls_result.blue_ml, mls_result.dark_ml]
 
-        # Determine if brewable
+        # High to help with first comparison below
+        num_potions = 10000
+
+        # Determine number of potions that could be brewed
         for i in range(4):
-            if potion.type[i] > mls[i]:
-                brewable = False
-        
-        if brewable:
-            # High to help with first comparison below
-            num_potions = 1000
+            if potion.type[i] > 0:
+                temp_count = mls[i] // potion.type[i]
+                if temp_count < num_potions:
+                    num_potions = temp_count
 
-            # Determine number of potions that can be brewed
+        if num_potions != 0:
+            # Update mls in list
             for i in range(4):
-                if potion.type[i] != 0:
-                    temp_count = 0
-                    while potion.type[i] <= mls[i]:
-                        temp_count += 1
-                        mls[i] -= potion.type[i]
+                if potion.type[i] > 0:
+                    mls[i] -= num_potions * potion.type[i]
 
-                    if temp_count < num_potions:
-                        num_potions = temp_count
-
-            # Returns the correct number of potions
-            return [
-                    {
-                        "potion_type": potion.type,
-                        "quantity": num_potions
-                    }
-                ]
+            # Add to bottle plan
+            bottle_plan.append({
+                "potion_type": potion.type,
+                "quantity": num_potions
+            })
  
-    return []
+    return bottle_plan
 
 if __name__ == "__main__":
     print(get_bottle_plan())

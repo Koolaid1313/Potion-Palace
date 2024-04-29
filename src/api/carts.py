@@ -151,16 +151,17 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             # Update the inventory
             connection.execute(sqlalchemy.text(
                 """
-                UPDATE potions SET 
-                quantity = quantity - :quantity_bought
-                WHERE sku = :sku
-                """), [{"quantity_bought": item.quantity, "sku": item.item_sku}])
+                INSERT INTO potion_ledgers
+                (sku, change)
+                VALUES
+                (:sku, :quantity)
+                """), [{"sku": item.item_sku, "quantity": -item.quantity}])
         
         # Update the gold
         connection.execute(sqlalchemy.text(
                 """
-                UPDATE global_inventory SET 
-                gold = gold + :gold
+                INSERT INTO inventory_ledgers
+                (gold) VALUES (:gold)
                 """), [{"gold": gold}])
         
     return {"total_potions_bought": quantity, "total_gold_paid": gold}
