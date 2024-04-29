@@ -22,7 +22,7 @@ def get_inventory():
             red_ml,
             green_ml,   
             blue_ml,
-            dark_ml,        
+            dark_ml       
             FROM global_inventory
             """)).one()
         potions = connection.execute(sqlalchemy.text(

@@ -23,7 +23,7 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
-    print(f"barrels delievered: {barrels_delivered} order_id: {order_id}\n")
+    print(f"barrels delievered: {barrels_delivered}, order_id: {order_id}\n")
 
     gold_paid = 0
     red_ml = 0
@@ -67,6 +67,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
 
+    purchase_plan = []
+
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
             """
@@ -78,7 +80,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             FROM global_inventory
             """)).one()
 
-    if result.gold >= 100:
+    # Get amount of gold
+    gold = result.gold
+
+    if gold >= 100:
         # Define potion types in a dictionary
         potions = {
             "RED": result.red_ml, 
@@ -96,11 +101,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # Iterate over the shuffled potions
         for potion_name in shuffled_potion_names:
             if potions[potion_name] == 0:
-                return [
-                    {
-                    "sku": f"SMALL_{potion_name}_BARREL",
-                    "quantity": int(result.gold / 100),
-                    }
-                ]
-    
-    return []
+                # Determine if there are enough available
+                for barrel in wholesale_catalog:
+                    if f"SMALL_{potion_name}_BARREL" == barrel.sku:
+                        print(f"Gold: {gold}, Barrel price: {barrel.price}, Barrel quantity: {barrel.quantity}")
+
+                        # Buys up to the quantity reported from the catalog
+                        if barrel.quantity > 0:
+                            barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
+                            purchase_plan.append({
+                                "sku": barrel.sku,
+                                "quantity": barrels_to_buy,
+                            })
+                            gold -= barrels_to_buy * barrel.price
+                            break
+                            
+    print(purchase_plan)
+    return purchase_plan
