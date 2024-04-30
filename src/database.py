@@ -3,10 +3,10 @@ import dotenv
 from sqlalchemy import create_engine
 
 def database_connection_url():
-    local = True
+    local = False
     
     dotenv.load_dotenv()
-    
+
     if local:
         return os.environ.get("LOCAL_URI")
     else:
