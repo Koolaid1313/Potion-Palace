@@ -65,7 +65,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
 
-    purchase_plan = []
+    # purchase_plan = []
 
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
@@ -107,12 +107,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                         # Buys up to the quantity reported from the catalog
                         if barrel.quantity > 0:
                             barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
-                            purchase_plan.append({
+                            return [{
                                 "sku": barrel.sku,
-                                "quantity": barrels_to_buy,
-                            })
-                            gold -= barrels_to_buy * barrel.price
-                            break
+                                "quantity": barrels_to_buy
+                            }]
+                            # purchase_plan.append({
+                            #     "sku": barrel.sku,
+                            #     "quantity": barrels_to_buy,
+                            # })
+                            # gold -= barrels_to_buy * barrel.price
+                            # break
                             
-    print(purchase_plan)
-    return purchase_plan
+    # print(purchase_plan)
+    return []
