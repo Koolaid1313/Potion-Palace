@@ -66,22 +66,9 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
 
-    # purchase_plan = []
+    purchase_plan = []
 
-    with db.engine.begin() as connection:
-        # Used to get the wholesale catalog in database
-        for barrel in wholesale_catalog:
-            connection.execute(sqlalchemy.text(
-                """
-                INSERT INTO wholesale_catalog
-                (sku, ml, type, price, quantity)
-                VALUES
-                (:sku, :ml_per_barrel, :potion_type, :price, :quantity)
-                """), 
-                [{"sku": barrel.sku, "ml_per_barrel": barrel.ml_per_barrel, 
-                  "potion_type": barrel.potion_type, "price": barrel.price, 
-                  "quantity": barrel.quantity}])
-            
+    with db.engine.begin() as connection:  
         result = connection.execute(sqlalchemy.text(
             """
             SELECT SUM(gold) AS gold,
@@ -91,6 +78,17 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             SUM(dark_ml) AS dark_ml
             FROM inventory_ledgers
             """)).one()
+        # Gets the ml_capacity 
+        ml_capacity = connection.execute(sqlalchemy.text(
+            """
+            SELECT ml_capacity
+            FROM capacity
+            """)).one().ml_capacity
+
+    print(ml_capacity)
+    
+    # Get the total mls in inventory
+    total_mls = result.red_ml + result.green_ml + result.blue_ml + result.dark_ml
 
     # Get amount of gold
     gold = result.gold
@@ -115,22 +113,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if potions[potion_name] == 0:
                 # Determine if there are enough available
                 for barrel in wholesale_catalog:
-                    if f"SMALL_{potion_name}_BARREL" == barrel.sku:
+                    # Buys up to the quantity reported from the catalog
+                    if f"SMALL_{potion_name}_BARREL" == barrel.sku and barrel.quantity > 0:
+                        barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
+                        total_mls += barrels_to_buy * barrel.ml_per_barrel
+
                         print(f"Gold: {gold}, Barrel price: {barrel.price}, Barrel quantity: {barrel.quantity}")
 
-                        # Buys up to the quantity reported from the catalog
-                        if barrel.quantity > 0:
-                            barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
-                            return [{
-                                "sku": f"SMALL_{potion_name}_BARREL",
-                                "quantity": barrels_to_buy
-                            }]
-                            # purchase_plan.append({
-                            #     "sku": barrel.sku,
-                            #     "quantity": barrels_to_buy,
-                            # })
-                            # gold -= barrels_to_buy * barrel.price
-                            # break
+                        # Run until there is enough capacity
+                        while(barrels_to_buy > 0):
+                            if total_mls <= ml_capacity:
+                                purchase_plan.append({
+                                    "sku": barrel.sku,
+                                    "quantity": barrels_to_buy,
+                                })
+                                gold -= barrels_to_buy * barrel.price
+                                break
+
+                            # Decrease the amount to buy by 1
+                            barrels_to_buy -= 1
+                            total_mls -= barrel.ml_per_barrel
                             
-    # print(purchase_plan)
-    return []
+    print(purchase_plan)
+    return purchase_plan

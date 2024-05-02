@@ -76,12 +76,27 @@ def get_bottle_plan():
             ORDER BY price DESC
             """)).all()
         
+        # Sum to extract potions quantity
+        potion_quantity = connection.execute(sqlalchemy.text(
+            """
+            SELECT COALESCE(SUM(change), 0) AS sum
+            FROM potion_ledgers
+            """)).one().sum
+        
+        # Gets the potion capacity
+        potion_capacity = connection.execute(sqlalchemy.text(
+            """
+            SELECT potion_capacity
+            FROM capacity
+            """)).one().potion_capacity
+        
+    print(f"potion_capacity: {potion_capacity}, potion_quantity: {potion_quantity}")
+
     bottle_plan = []
     mls = [mls_result.red_ml, mls_result.green_ml, mls_result.blue_ml, mls_result.dark_ml]
     
     # Bottle all mls into potions
     for potion in potions:
-
         # High to help with first comparison below
         num_potions = 10000
 
@@ -92,17 +107,25 @@ def get_bottle_plan():
                 if temp_count < num_potions:
                     num_potions = temp_count
 
-        if num_potions != 0:
-            # Update mls in list
-            for i in range(4):
-                if potion.type[i] > 0:
-                    mls[i] -= num_potions * potion.type[i]
+        potion_quantity += num_potions
 
-            # Add to bottle plan
-            bottle_plan.append({
-                "potion_type": potion.type,
-                "quantity": num_potions
-            })
+        # Runs until there is enough capacity
+        while(num_potions > 0):
+            if potion_quantity <= potion_capacity:
+                # Update mls in list
+                for i in range(4):
+                    if potion.type[i] > 0:
+                        mls[i] -= num_potions * potion.type[i]
+
+                # Add to bottle plan
+                bottle_plan.append({
+                    "potion_type": potion.type,
+                    "quantity": num_potions
+                })
+                break
+            
+            num_potions -= 1
+            potion_quantity -= 1
  
     return bottle_plan
 

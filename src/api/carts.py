@@ -54,6 +54,15 @@ def search_orders(
     time is 5 total line items.
     """
 
+    results = []
+
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text(
+            """
+            SELECT c.
+            FROM carts AS c
+            """))
+        
     return {
         "previous": "",
         "next": "",

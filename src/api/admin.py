@@ -25,6 +25,10 @@ def reset():
             DELETE FROM inventory_ledgers;
             INSERT INTO inventory_ledgers
             (gold) VALUES (100);
+            DELETE FROM capacity;
+            INSERT INTO capacity
+            (ml_capacity, potion_capacity)
+            VALUES (10000, 50);
             """))
 
     return "OK"
