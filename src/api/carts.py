@@ -53,30 +53,49 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-
     results = []
+    query = """
+        SELECT ci.id, ci.item_sku, c.customer_name, (p.price * ci.quantity) AS line_item_total, c.created_at AS timestamp
+        FROM carts AS c
+        LEFT JOIN cart_items AS ci ON c.cart_id = ci.cart_id
+        LEFT JOIN potions AS p ON p.sku = ci.item_sku
+        """
+    
+    # Filtering
+    if customer_name:
+        query += f" WHERE LOWER(customer_name) LIKE LOWER('{customer_name}')"
+        if potion_sku:
+            query += f" AND LOWER(item_sku) LIKE LOWER('{potion_sku}')"
+    elif potion_sku:
+        query += f" WHERE LOWER(item_sku) LIKE LOWER('{potion_sku}')"
+
+    # Sorting
+    query += f" ORDER BY {sort_col.value} {sort_order.value}"
+    
+    # Pagination
+    if search_page:
+        query += f" OFFSET {int(search_page)*5}"
 
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(
-            """
-            SELECT c.
-            FROM carts AS c
-            """))
-        
-    return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
-    }
+        result = connection.execute(sqlalchemy.text(query)).fetchall()
 
+        for row in result:
+            results.append({
+                "line_item_id": row[0],
+                "item_sku": row[1],
+                "customer_name": row[2],
+                "line_item_total": row[3],
+                "timestamp": row[4].isoformat() if row[4] else None,
+            })
+
+    # Convert search_page to int
+    search_page_int = int(search_page) if search_page.isdigit() else 0
+    
+    return {
+        "previous": str(search_page_int - 1) if search_page_int > 0 else "",
+        "next": str(search_page_int + 1) if len(results) > 5 else "",
+        "results": results[:5]
+    }
 
 class Customer(BaseModel):
     customer_name: str
