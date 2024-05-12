@@ -71,7 +71,7 @@ def get_capacity_plan():
                 "potion_capacity": 1,
                 "ml_capacity": 0
             }
-        elif inventory.total_ml >= capacity.mls - 1000:
+        elif inventory.total_ml >= capacity.mls - 4000:
             return {
                 "potion_capacity": 0,
                 "ml_capacity": 1
