@@ -44,7 +44,7 @@ def get_capacity_plan():
     # temp
     return {
         "potion_capacity": 0,
-        "ml_capacity": 1
+        "ml_capacity": 9
     }
 
     with db.engine.begin() as connection:
