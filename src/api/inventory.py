@@ -41,6 +41,12 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
 
+    # temp
+    return {
+        "potion_capacity": 0,
+        "ml_capacity": 1
+    }
+
     with db.engine.begin() as connection:
         # Get gold and mls
         inventory = connection.execute(sqlalchemy.text(
