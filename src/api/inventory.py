@@ -41,12 +41,6 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
 
-    # temp
-    return {
-        "potion_capacity": 0,
-        "ml_capacity": 9
-    }
-
     with db.engine.begin() as connection:
         # Get gold and mls
         inventory = connection.execute(sqlalchemy.text(
@@ -71,16 +65,16 @@ def get_capacity_plan():
             FROM capacity
             """)).one()
 
-    if inventory.gold >= 2500:
-        if potions.sum >= capacity.potions - 10:
+    if inventory.gold >= 10000:
+        if potions.sum >= capacity.potions * 0.9:
             return {
-                "potion_capacity": 1,
+                "potion_capacity": round(inventory.gold * 7 / 10000),
                 "ml_capacity": 0
             }
-        elif inventory.total_ml >= capacity.mls - 4000:
+        if inventory.total_ml >= capacity.mls * 0.9:
             return {
                 "potion_capacity": 0,
-                "ml_capacity": 1
+                "ml_capacity": round(inventory.gold * 7 / 10000)
             }
 
     return {
