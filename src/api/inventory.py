@@ -68,13 +68,13 @@ def get_capacity_plan():
     if inventory.gold >= 10000:
         if potions.sum >= capacity.potions * 0.9:
             return {
-                "potion_capacity": round(inventory.gold * 7 / 10000),
+                "potion_capacity": int(inventory.gold * 7 / 10000),
                 "ml_capacity": 0
             }
         if inventory.total_ml >= capacity.mls * 0.9:
             return {
                 "potion_capacity": 0,
-                "ml_capacity": round(inventory.gold * 7 / 10000)
+                "ml_capacity": int(inventory.gold * 7 / 10000)
             }
 
     return {

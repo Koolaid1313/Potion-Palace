@@ -110,29 +110,28 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
         # Iterate over the shuffled potions
         for potion_name in shuffled_potion_names:
-            if potions[potion_name] == 0:
-                # Determine if there are enough available
-                for barrel in wholesale_catalog:
-                    # Buys up to the quantity reported from the catalog
-                    if f"SMALL_{potion_name}_BARREL" == barrel.sku and barrel.quantity > 0:
-                        barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
-                        total_mls += barrels_to_buy * barrel.ml_per_barrel
+            # Determine if there are enough available
+            for barrel in wholesale_catalog:
+                # Buys up to the quantity reported from the catalog
+                if f"SMALL_{potion_name}_BARREL" == barrel.sku and barrel.quantity > 0:
+                    barrels_to_buy = min(int(gold/barrel.price), barrel.quantity)
+                    total_mls += barrels_to_buy * barrel.ml_per_barrel
 
-                        print(f"Gold: {gold}, Barrel price: {barrel.price}, Barrel quantity: {barrel.quantity}")
+                    print(f"Gold: {gold}, Barrel price: {barrel.price}, Barrel quantity: {barrel.quantity}")
 
-                        # Run until there is enough capacity
-                        while(barrels_to_buy > 0):
-                            if total_mls <= ml_capacity:
-                                purchase_plan.append({
-                                    "sku": barrel.sku,
-                                    "quantity": barrels_to_buy,
-                                })
-                                gold -= barrels_to_buy * barrel.price
-                                break
+                    # Run until there is enough capacity
+                    while(barrels_to_buy > 0):
+                        if total_mls <= ml_capacity:
+                            purchase_plan.append({
+                                "sku": barrel.sku,
+                                "quantity": barrels_to_buy,
+                            })
+                            gold -= barrels_to_buy * barrel.price
+                            break
 
-                            # Decrease the amount to buy by 1
-                            barrels_to_buy -= 1
-                            total_mls -= barrel.ml_per_barrel
+                        # Decrease the amount to buy by 1
+                        barrels_to_buy -= 1
+                        total_mls -= barrel.ml_per_barrel
                             
     print(purchase_plan)
     return purchase_plan
