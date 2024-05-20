@@ -64,7 +64,7 @@ def get_capacity_plan():
             potion_capacity AS potions
             FROM capacity
             """)).one()
-
+    """
     if inventory.gold >= 10000:
         if potions.sum >= capacity.potions * 0.9:
             return {
@@ -76,9 +76,9 @@ def get_capacity_plan():
                 "potion_capacity": 0,
                 "ml_capacity": int(inventory.gold * 7 / 10000)
             }
-
+    """
     return {
-        "potion_capacity": 0,
+        "potion_capacity": 8,
         "ml_capacity": 0
     }      
 
